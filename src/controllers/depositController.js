@@ -1,6 +1,6 @@
 import User from "../models/User.js"
 import Deposit from "../models/Deposit.js" // new model for pending deposits
-import { getPrice } from "../services/prices.js"
+import { getPrices } from "../services/prices.js"
 
 // Initiate deposit (user submits)
 export const deposit = async (req, res) => {
@@ -45,7 +45,7 @@ export const approveDeposit = async (req, res) => {
         const user = await User.findById(deposit.user)
         if (!user) return res.status(404).json({ message: "User not found" })
 
-        const price = await getPrice(deposit.coin)
+        const price = await getPrices(deposit.coin)
         const amountUSD = deposit.amount * price
 
         // Update user balance

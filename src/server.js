@@ -14,11 +14,13 @@ import authRoutes from "./routes/auth.js"
 import marketRoutes from "./routes/market.js"
 import portfolioRoutes from "./routes/portfolio.js"
 import userRoutes from "./routes/user.js"
+import depositRoutes from "./routes/deposit.js"
 
 app.use("/auth", authRoutes)
 app.use("/market", marketRoutes)
 app.use("/portfolio", portfolioRoutes)
 app.use("/user", userRoutes)
+app.use("/deposit", depositRoutes)
 
 const PORT = process.env.PORT || 4000;
 

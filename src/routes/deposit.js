@@ -1,12 +1,13 @@
 import express from "express"
-import { protect, admin } from "../middleware/authMiddleware.js"
-import { initiateDeposit, approveDeposit, rejectDeposit, getAllDeposits } from "../controllers/depositController.js"
+import auth from "../middleware/auth.js"
+import {approveDeposit, rejectDeposit, getAllDeposits, deposit } from "../controllers/depositController.js"
+import { adminAccess } from "../middleware/adminMiddleware.js"
 
 const router = express.Router()
 
-router.post("/initiate", protect, initiateDeposit)
-router.get("/", protect, getAllDeposits)
-router.patch("/approve/:depositId", protect, admin, approveDeposit)
-router.patch("/reject/:depositId", protect, admin, rejectDeposit)
+router.post("/initiate", auth, deposit)
+router.get("/", auth, getAllDeposits)
+router.patch("/approve/:depositId", auth, adminAccess, approveDeposit)
+router.patch("/reject/:depositId", auth, adminAccess, rejectDeposit)
 
 export default router

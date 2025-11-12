@@ -14,6 +14,8 @@ const FULL_MARKET_CACHE_DURATION = 120 * 1000; // 2 minutes
 
 // ---------- 1️⃣ Get Prices (for portfolio) ----------
 export const getPrices = async (coins = []) => {
+  coins = Array.isArray(coins) ? coins : Object.values(coins);
+
   const now = Date.now();
   const cacheExpired = now - lastPriceUpdate > PRICE_CACHE_DURATION;
 

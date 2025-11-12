@@ -6,7 +6,7 @@ import { adminAccess } from "../middleware/adminMiddleware.js"
 const router = express.Router()
 
 router.post("/initiate", auth, initiateDeposit)
-router.get("/", auth, getAllDeposits)
+router.get("/all", auth, getAllDeposits)
 router.patch("/approve/:depositId", auth, adminAccess, approveDeposit)
 router.patch("/reject/:depositId", auth, adminAccess, rejectDeposit)
 

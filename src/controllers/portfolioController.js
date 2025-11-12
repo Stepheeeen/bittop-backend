@@ -1,12 +1,13 @@
 import User from "../models/User.js"
 import { getPrices } from "../services/prices.js"
 
+// GET /portfolio
 export const getPortfolio = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
     if (!user) return res.status(404).json({ error: "User not found" })
 
-    const coins = user.portfolio.map(asset => asset.coin)
+    const coins = user.portfolio.map(p => p.coin)
     const prices = await getPrices(coins)
 
     const portfolio = user.portfolio.map(asset => {
@@ -24,6 +25,6 @@ export const getPortfolio = async (req, res) => {
     res.json(portfolio)
   } catch (err) {
     console.error(err)
-    res.status(500).json({ error: "Failed to fetch portfolio data" })
+    res.status(500).json({ error: "Failed to fetch portfolio" })
   }
 }

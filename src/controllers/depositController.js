@@ -14,7 +14,7 @@ export const initiateDeposit = async (req, res) => {
         if (!user) return res.status(404).json({ message: "User not found" })
 
         const amountCrypto = parseFloat(amount)
-        const price = await getPrice(coin)
+        const price = await getPrices(coin)
         const amountUSD = price * amountCrypto
 
         // Add deposit as pending

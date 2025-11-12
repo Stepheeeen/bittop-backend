@@ -5,9 +5,18 @@ import { getPrices } from "../services/prices.js";
 export const getPortfolio = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     const coins = user.portfolio.map((p) => p.coin);
-    const prices = await getPrices(coins); // batch fetch
+
+    let prices = {};
+    try {
+      prices = await getPrices(coins); // batch fetch
+    } catch (priceErr) {
+      // Handle rate limit / network issues gracefully
+      console.warn("⚠️ Price fetch failed, using fallback:", priceErr.message);
+      prices = {}; // fallback to empty prices, so values = 0
+    }
 
     const portfolio = user.portfolio.map((asset) => {
       const currentPrice = prices[asset.coin] || 0;

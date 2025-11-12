@@ -9,9 +9,14 @@ router.get("/simple", async (req, res) => {
 });
 
 router.get("/full", async (req, res) => {
-  const data = await getFullMarket();
-  res.json(data);
-});
+  try {
+    const data = await getFullMarket()
+    res.json(data)
+  } catch (err) {
+    console.error("Route error:", err.message)
+    res.status(500).json({ error: "Failed to load market data" })
+  }
+})
 
 router.get("/price/:coin", async (req, res) => {
   const { coin } = req.params;

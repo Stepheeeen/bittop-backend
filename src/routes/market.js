@@ -17,22 +17,17 @@ router.get("/simple", async (req, res) => {
 });
 
 // Full market data (50 coins max)
+
 router.get("/full", async (req, res) => {
   try {
-    const now = Date.now();
-    if (cachedMarket.length && now - lastMarketUpdate < 2 * 60 * 1000) {
-      return res.json(cachedMarket);
-    }
-
-    const data = await getFullMarket();
-    cachedMarket = data;
-    lastMarketUpdate = now;
-    res.json(data);
+    const data = await getFullMarket()
+    res.json(data)
   } catch (err) {
-    console.error("Market fetch error:", err.message);
-    res.status(500).json({ error: "Failed to load market data" });
+    console.error("Route error:", err.message)
+    res.status(500).json({ error: "Failed to load market data" })
   }
-});
+})
+
 
 // Get price for a single coin
 router.get("/price/:coin", async (req, res) => {

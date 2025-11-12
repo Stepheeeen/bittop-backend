@@ -16,6 +16,7 @@ const transactionSchema = new mongoose.Schema({
 })
 
 const userSchema = new mongoose.Schema({
+  username: String,
   email: String,
   password: String,
   phone: String,

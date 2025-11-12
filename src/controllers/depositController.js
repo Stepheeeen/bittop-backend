@@ -3,32 +3,40 @@ import Deposit from "../models/Deposit.js" // new model for pending deposits
 import { getPrices } from "../services/prices.js"
 
 // Initiate deposit (user submits)
-export const deposit = async (req, res) => {
+export const initiateDeposit = async (req, res) => {
     try {
-        const { coin, network, amountCrypto, address } = req.body
-        const userId = req.user.id
+        const { coin, network, address, amount } = req.body
 
-        if (!coin || !network || !amountCrypto || !address) {
+        if (!coin || !network || !address || !amount)
             return res.status(400).json({ message: "All fields are required." })
-        }
 
-        // Create a new pending deposit
-        const newDeposit = await Deposit.create({
-            user: userId,
+        const user = await User.findById(req.user.id)
+        if (!user) return res.status(404).json({ message: "User not found" })
+
+        const amountCrypto = parseFloat(amount)
+        const price = await getPrice(coin)
+        const amountUSD = price * amountCrypto
+
+        // Add deposit as pending
+        user.deposits = user.deposits || []
+        user.deposits.push({
             coin,
             network,
             address,
-            amount: amountCrypto,
-            status: "pending"
+            amountCrypto,
+            amountUSD,
+            status: "pending",
+            date: new Date(),
         })
 
-        res.status(200).json({
+        await user.save()
+
+        res.json({
             message: "Deposit submitted successfully. Await admin confirmation.",
-            deposit: newDeposit
         })
     } catch (err) {
         console.error(err)
-        res.status(500).json({ message: "Server error" })
+        res.status(500).json({ message: "Server error." })
     }
 }
 

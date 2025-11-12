@@ -2,6 +2,8 @@ import express from "express";
 import { getMarket, getPrices, getFullMarket } from "../services/prices.js";
 
 const router = express.Router();
+let cachedMarket = [];
+let lastMarketUpdate = 0;
 
 // Simplified top coins market data
 router.get("/simple", async (req, res) => {
@@ -17,11 +19,18 @@ router.get("/simple", async (req, res) => {
 // Full market data (50 coins max)
 router.get("/full", async (req, res) => {
   try {
+    const now = Date.now();
+    if (cachedMarket.length && now - lastMarketUpdate < 2 * 60 * 1000) {
+      return res.json(cachedMarket);
+    }
+
     const data = await getFullMarket();
+    cachedMarket = data;
+    lastMarketUpdate = now;
     res.json(data);
   } catch (err) {
-    console.error("Full market route error:", err.message);
-    res.status(500).json({ error: "Failed to load full market data" });
+    console.error("Market fetch error:", err.message);
+    res.status(500).json({ error: "Failed to load market data" });
   }
 });
 

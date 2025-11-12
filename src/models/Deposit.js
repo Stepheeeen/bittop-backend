@@ -1,14 +1,17 @@
 import mongoose from "mongoose"
 
-const depositSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  coin: { type: String, required: true },
-  amountCrypto: { type: Number, required: true },
-  amountUSD: { type: Number, default: 0 },
-  status: { type: String, enum: ["pending", "confirmed", "rejected"], default: "pending" },
-  address: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-  confirmedAt: { type: Date }
-})
+const depositSchema = new mongoose.Schema(
+  {
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    coin: { type: String, required: true },
+    network: { type: String, required: true },
+    amount: { type: Number, required: true },
+    address: { type: String, required: true },
+    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+  },
+  { timestamps: true }
+)
 
 export default mongoose.model("Deposit", depositSchema)

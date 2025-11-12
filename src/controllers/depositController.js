@@ -1,117 +1,112 @@
 import User from "../models/User.js"
-import Deposit from "../models/Deposit.js"
+import Deposit from "../models/Deposit.js" // new model for pending deposits
 import { getPrice } from "../services/prices.js"
 
-// === 1. INITIATE DEPOSIT (USER ACTION) ===
-export const initiateDeposit = async (req, res) => {
+// Initiate deposit (user submits)
+export const deposit = async (req, res) => {
     try {
-        const { coin, amountCrypto } = req.body
-        const user = await User.findById(req.user.id)
-        if (!user) return res.status(404).json({ message: "User not found" })
+        const { coin, network, amountCrypto, address } = req.body
+        const userId = req.user.id
 
-        const price = await getPrice(coin)
-        const amountUSD = price * amountCrypto
+        if (!coin || !network || !amountCrypto || !address) {
+            return res.status(400).json({ message: "All fields are required." })
+        }
 
-        // Simulated unique address
-        const address = `bittop-${coin}-${user._id}-${Date.now()}`
-
-        // Create pending deposit
-        const deposit = await Deposit.create({
-            userId: user._id,
+        // Create a new pending deposit
+        const newDeposit = await Deposit.create({
+            user: userId,
             coin,
-            amountCrypto,
-            amountUSD,
+            network,
             address,
+            amount: amountCrypto,
             status: "pending"
         })
 
-        res.status(201).json({
-            message: "Deposit initiated successfully",
-            deposit: {
-                id: deposit._id,
-                coin,
-                amountCrypto,
-                amountUSD,
-                address,
-                status: "pending"
-            }
+        res.status(200).json({
+            message: "Deposit submitted successfully. Await admin confirmation.",
+            deposit: newDeposit
         })
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({ message: "Failed to initiate deposit" })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: "Server error" })
     }
 }
 
-
-// === 2. CONFIRM DEPOSIT (ADMIN ACTION) ===
-export const confirmDeposit = async (req, res) => {
+// Admin approves deposit
+export const approveDeposit = async (req, res) => {
     try {
-        const { id } = req.params
-        const deposit = await Deposit.findById(id)
+        const { depositId } = req.params
+        const deposit = await Deposit.findById(depositId)
         if (!deposit) return res.status(404).json({ message: "Deposit not found" })
-        if (deposit.status !== "pending") return res.status(400).json({ message: "Deposit already processed" })
 
-        const user = await User.findById(deposit.userId)
+        if (deposit.status !== "pending")
+            return res.status(400).json({ message: "Deposit already processed" })
+
+        const user = await User.findById(deposit.user)
         if (!user) return res.status(404).json({ message: "User not found" })
 
-        // Update wallet balance
-        user.balance += deposit.amountUSD
+        const price = await getPrice(deposit.coin)
+        const amountUSD = deposit.amount * price
+
+        // Update user balance
+        user.balance += amountUSD
 
         // Update portfolio
-        const existing = user.portfolio.find(p => p.coin === deposit.coin)
+        const existing = user.portfolio.find((p) => p.coin === deposit.coin)
         if (existing) {
-            existing.amount += deposit.amountCrypto
-            existing.invested += deposit.amountUSD
-            existing.history.push({
-                date: new Date(),
-                amount: deposit.amountCrypto,
-                invested: deposit.amountUSD
-            })
+            existing.amount += deposit.amount
+            existing.invested += amountUSD
+            existing.history.push({ date: new Date(), amount: deposit.amount, invested: amountUSD })
         } else {
             user.portfolio.push({
                 coin: deposit.coin,
-                amount: deposit.amountCrypto,
-                invested: deposit.amountUSD,
-                history: [{ date: new Date(), amount: deposit.amountCrypto, invested: deposit.amountUSD }]
+                amount: deposit.amount,
+                invested: amountUSD,
+                history: [{ date: new Date(), amount: deposit.amount, invested: amountUSD }]
             })
         }
 
-        // Record transaction
+        // Save transaction
         user.transactions.push({
             type: "deposit",
             coin: deposit.coin,
-            amountCrypto: deposit.amountCrypto,
-            amountUSD: deposit.amountUSD,
+            amountCrypto: deposit.amount,
+            amountUSD,
             date: new Date()
         })
 
-        // Update deposit status
-        deposit.status = "confirmed"
-        deposit.confirmedAt = new Date()
-
         await user.save()
+
+        // Mark deposit as approved
+        deposit.status = "approved"
+        deposit.updatedAt = new Date()
         await deposit.save()
 
-        res.json({ message: "Deposit confirmed successfully", balance: user.balance })
-    } catch (error) {
-        console.error(error)
-        res.status(500).json({ message: "Failed to confirm deposit" })
+        res.json({ message: "Deposit approved and wallet updated." })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: "Server error" })
     }
 }
 
-
-// === 3. ADMIN REJECT (OPTIONAL) ===
+// Admin rejects deposit
 export const rejectDeposit = async (req, res) => {
     try {
-        const { id } = req.params
-        const deposit = await Deposit.findById(id)
+        const { depositId } = req.params
+        const deposit = await Deposit.findById(depositId)
         if (!deposit) return res.status(404).json({ message: "Deposit not found" })
 
+        if (deposit.status !== "pending")
+            return res.status(400).json({ message: "Deposit already processed" })
+
         deposit.status = "rejected"
+        deposit.updatedAt = new Date()
         await deposit.save()
-        res.json({ message: "Deposit rejected" })
-    } catch (error) {
-        res.status(500).json({ message: "Failed to reject deposit" })
+
+        res.json({ message: "Deposit rejected." })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ message: "Server error" })
     }
 }
 
@@ -140,4 +135,3 @@ export const getAllDeposits = async (req, res) => {
         res.status(500).json({ message: "Failed to fetch deposits" })
     }
 }
-

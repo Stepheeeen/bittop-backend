@@ -4,41 +4,41 @@ import { getPrices } from "../services/prices.js"
 
 // Initiate deposit (user submits)
 export const initiateDeposit = async (req, res) => {
-    try {
-        const { coin, network, address, amount } = req.body
+  try {
+    const { coin, network, address, amount } = req.body;
 
-        if (!coin || !network || !address || !amount)
-            return res.status(400).json({ message: "All fields are required." })
-
-        const user = await User.findById(req.user.id)
-        if (!user) return res.status(404).json({ message: "User not found" })
-
-        const amountCrypto = parseFloat(amount)
-        const price = await getPrices(coin)
-        const amountUSD = price * amountCrypto
-
-        // Add deposit as pending
-        user.deposits = user.deposits || []
-        user.deposits.push({
-            coin,
-            network,
-            address,
-            amountCrypto,
-            amountUSD,
-            status: "pending",
-            date: new Date(),
-        })
-
-        await user.save()
-
-        res.json({
-            message: "Deposit submitted successfully. Await admin confirmation.",
-        })
-    } catch (err) {
-        console.error(err)
-        res.status(500).json({ message: "Server error." })
+    if (!coin || !network || !address || !amount) {
+      return res.status(400).json({ message: "All fields are required." });
     }
-}
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Just store what the user entered — skip price fetching
+    user.deposits = user.deposits || [];
+    user.deposits.push({
+      coin,
+      network,
+      address,
+      amountCrypto: parseFloat(amount),
+      amountUSD: null, // optional placeholder
+      status: "pending",
+      date: new Date(),
+    });
+
+    await user.save();
+
+    res.json({
+      message: "Deposit submitted successfully. Await admin confirmation.",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error." });
+  }
+};
+
 
 // Admin approves deposit
 export const approveDeposit = async (req, res) => {

@@ -1,5 +1,5 @@
 import express from "express";
-import { getMarket, getPrice, getFullMarket } from "../services/prices.js";
+import { getMarket, getPrices, getFullMarket } from "../services/prices.js";
 
 const router = express.Router();
 
@@ -20,7 +20,7 @@ router.get("/full", async (req, res) => {
 
 router.get("/price/:coin", async (req, res) => {
   const { coin } = req.params;
-  const price = await getPrice(coin);
+  const price = await getPrices(coin);
   res.json({ coin, price });
 });
 

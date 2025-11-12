@@ -1,5 +1,5 @@
 import User from "../models/User.js"
-import { getPrice } from "../services/prices.js"
+import { getPrices } from "../services/prices.js"
 
 export const deposit = async (req, res) => {
   const { coin, amountCrypto } = req.body

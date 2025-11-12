@@ -1,22 +1,29 @@
 import User from "../models/User.js"
-import { getPrice } from "../services/prices.js"
+import { getPrices } from "../services/prices.js"
 
 export const getPortfolio = async (req, res) => {
-  const user = await User.findById(req.user.id)
-  const portfolio = []
+  try {
+    const user = await User.findById(req.user.id)
+    if (!user) return res.status(404).json({ error: "User not found" })
 
-  for (let asset of user.portfolio) {
-    const price = await getPrice(asset.coin)
-    const currentValue = price * asset.amount
+    const coins = user.portfolio.map(asset => asset.coin)
+    const prices = await getPrices(coins)
 
-    portfolio.push({
-      coin: asset.coin,
-      amount: asset.amount,
-      invested: asset.invested,
-      currentValue,
-      gainLoss: currentValue - asset.invested
+    const portfolio = user.portfolio.map(asset => {
+      const price = prices[asset.coin] || 0
+      const currentValue = price * asset.amount
+      return {
+        coin: asset.coin,
+        amount: asset.amount,
+        invested: asset.invested,
+        currentValue,
+        gainLoss: currentValue - asset.invested
+      }
     })
-  }
 
-  res.json(portfolio)
+    res.json(portfolio)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Failed to fetch portfolio data" })
+  }
 }

@@ -24,7 +24,12 @@ export const signup = async (req, res) => {
             lastPasswordChange: new Date()
         })
 
-        send email let transporter = nodemailer.createTransport({ service: "gmail", auth: { user: process.env.EMAIL,         pass: process.env.EMAIL_PASS } }) 
+
+        // send email
+        let transporter = nodemailer.createTransport({
+            service: "gmail",
+            auth: { user: process.env.EMAIL, pass: process.env.EMAIL_PASS }
+        })
            await transporter.sendMail({ 
             to: email, 
             subject: "🎉 Welcome to BITTOP — Your Crypto Journey Starts Here!", 

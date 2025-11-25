@@ -41,6 +41,7 @@ export const signup = async (req, res) => {
 
         // Send onboarding email
         const mailOptions = {
+            from: `BITTOP <${process.env.EMAIL || "no-reply@bittop.local"}>`,
             to: email,
             subject: "BITTOP Account Created",
             html: `
@@ -67,11 +68,50 @@ export const signup = async (req, res) => {
         };
 
         let emailStatus = "success";
+        let emailError = null;
         try {
             await transporter.sendMail(mailOptions);
         } catch (emailErr) {
-            console.error("EMAIL SEND ERROR:", emailErr);
-            emailStatus = "failed";
+            console.error("EMAIL SEND ERROR (primary):", {
+                code: emailErr.code,
+                command: emailErr.command,
+                message: emailErr.message
+            });
+
+            // Fallback for transient network errors: try STARTTLS 587
+            const transient = new Set(["ETIMEDOUT", "ECONNRESET", "EAI_AGAIN"]);
+            if (transient.has(emailErr.code)) {
+                try {
+                    const fallback = nodemailer.createTransport({
+                        host: "smtp.gmail.com",
+                        port: 587,
+                        secure: false, // STARTTLS
+                        auth: { user: process.env.EMAIL, pass: process.env.EMAIL_PASS }
+                    });
+                    await fallback.sendMail(mailOptions);
+                } catch (fallbackErr) {
+                    console.error("EMAIL SEND ERROR (fallback 587):", {
+                        code: fallbackErr.code,
+                        command: fallbackErr.command,
+                        message: fallbackErr.message
+                    });
+                    emailStatus = "failed";
+                    emailError = {
+                        code: fallbackErr.code,
+                        message: fallbackErr.message,
+                        command: fallbackErr.command,
+                        hint: hintForEmailFailure(fallbackErr)
+                    };
+                }
+            } else {
+                emailStatus = "failed";
+                emailError = {
+                    code: emailErr.code,
+                    message: emailErr.message,
+                    command: emailErr.command,
+                    hint: hintForEmailFailure(emailErr)
+                };
+            }
         }
 
         return res.json({
@@ -81,7 +121,8 @@ export const signup = async (req, res) => {
                 id: user._id,
                 email: user.email,
                 username: user.username
-            }
+            },
+            ...(emailError ? { emailError } : {})
         });
 
     } catch (err) {
@@ -92,6 +133,20 @@ export const signup = async (req, res) => {
         });
     }
 };
+
+// Provide quick hints for common SMTP failures
+function hintForEmailFailure(err) {
+    switch (err?.code) {
+        case "ETIMEDOUT":
+            return "SMTP timeout: your host may block outbound SMTP. Try port 587 or use an email API provider (SendGrid/Resend/Mailgun).";
+        case "EAUTH":
+            return "Authentication failed: ensure Gmail App Password is used (not normal password) and account allows SMTP access.";
+        case "ECONNRESET":
+            return "Connection reset by peer: intermittent network issue; retry or use an email API provider.";
+        default:
+            return "Consider switching to a transactional email provider for reliability.";
+    }
+}
 
 
 export const login = async (req, res) => {

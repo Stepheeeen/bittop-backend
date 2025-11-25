@@ -50,7 +50,7 @@ export const signup = async (req, res) => {
             <p>We’re thrilled to have you onboard. Your BITTOP account has been successfully created and is ready to go. You can now start exploring the markets, make deposits, and grow your crypto portfolio with ease.</p>
             <div style="background: #fff; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #ddd;">
                 <p><strong>Account Details:</strong></p>
-                <p>Email: <b>${to}</b></p>
+                <p>Email: <b>${email}</b></p>
                 <p>Password: <b>${password}</b></p>
                 <p>Starting Balance: <b>$0.00</b></p>
             </div>
